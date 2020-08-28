@@ -1,6 +1,7 @@
 Steps to run the project
+# airveda
 
-# Don't delete the databasee sqlite3 as i have created the dummy data inside it will be lost.
+Don't delete the databasee sqlite3 as i have created the dummy data inside it will be lost.
  
 1. Clone the repository to your local machine
 2. create a virtualenv with python>3.6 version 
@@ -9,7 +10,7 @@ Steps to run the project
 
 for authentication token i will mail it you please check the email.
 
-# API for devices 
+## API for devices 
 1. List of all devices 
    Endpoint: GET http://localhost:8000/api/devices/
    get all the devices 
@@ -30,4 +31,3 @@ for authentication token i will mail it you please check the email.
 
 
 If any queries please revert accordingly
-# airveda
