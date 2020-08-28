@@ -69,8 +69,10 @@ class ReadingView(APIView):
         try:
             device_id = kwargs['device_id']
             parameter = kwargs['parameter']
-            start_on = datetime.strptime(kwargs['start_on'],"%Y-%m-%d %H:%M:%S")
-            end_on = datetime.strptime(kwargs['end_on'],"%Y-%m-%d %H:%M:%S")
+            start_on_date = request.GET['start_on']
+            end_on_date = request.GET['end_on']
+            start_on = datetime.strptime(start_on_date,"%Y-%m-%d %H:%M:%S")
+            end_on = datetime.strptime(end_on_date,"%Y-%m-%d %H:%M:%S")
 
             if parameter == 'humidity':
                 res_data = HumidityReading.objects.filter(
@@ -85,7 +87,12 @@ class ReadingView(APIView):
                     device__id=device_id
                 )
             
-            res  = ReadingSerializer(res_data, many=True).data
+            res  = ReadingSerializer(res_data, many=True, context={
+                    'device_id':device_id,
+                    'start_on':start_on_date,
+                    'end_on': end_on_date,
+                    'parameter': parameter
+                }).data
         except Exception as e:
             return Response({"error": "some error occurred or not found!!"}, status=HTTP_404_NOT_FOUND)
 

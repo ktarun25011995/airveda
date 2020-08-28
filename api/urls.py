@@ -1,10 +1,10 @@
 from django.urls import re_path
-from .views import DeviceView, DeviceDetailView, ReadingView
+from api import views 
 
 
 urlpatterns = [
-    re_path(r'devices/(?P<device_id>[0-9A-Fa-f-]+)/readings/<str:parameter>/', ReadingView.as_view(), name='reading'),
-    re_path(r'devices/(?P<device_id>[0-9A-Fa-f-]+)/', DeviceView.as_view(), name='device'),
-    re_path(r'devices/', DeviceDetailView.as_view(), name='alldevices'),
+    re_path(r'devices/(?P<device_id>[0-9A-Fa-f-]+)/readings/(?P<parameter>[a-zA-Z_]+)/', views.ReadingView.as_view(), name='reading'),
+    re_path(r'devices/(?P<device_id>[0-9A-Fa-f-]+)/', views.DeviceView.as_view(), name='device'),
+    re_path(r'devices/', views.DeviceDetailView.as_view(), name='alldevices'),
 
 ]
