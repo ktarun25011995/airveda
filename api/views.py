@@ -68,6 +68,7 @@ class ReadingView(APIView):
     def get(self, request, *args, **kwargs):
         try:
             device_id = kwargs['device_id']
+            device = Device.objects.get(id=device_id)
             parameter = kwargs['parameter']
             start_on_date = request.GET['start_on']
             end_on_date = request.GET['end_on']
