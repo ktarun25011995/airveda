@@ -1,0 +1,157 @@
+[1mdiff --git a/api/models.py b/api/models.py[m
+[1mindex 0474e7d..6db5c0c 100644[m
+[1m--- a/api/models.py[m
+[1m+++ b/api/models.py[m
+[36m@@ -7,6 +7,7 @@[m [mfrom datetime import datetime[m
+ class Device(models.Model):[m
+     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)[m
+     created_at = models.DateTimeField(default=datetime.now)[m
+[32m+[m[32m    uid = models.CharField(max_length=200, null=False, unique=True)[m
+     name = models.CharField(max_length=200, null=False, unique=True)[m
+     [m
+     def __str__(self):[m
+[36m@@ -16,20 +17,18 @@[m [mclass Device(models.Model):[m
+ class TemperatureReading(models.Model):[m
+     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)[m
+     created_at = models.DateTimeField(default=datetime.now)[m
+[31m-    reading_type = models.CharField(max_length=200)[m
+     device = models.ForeignKey(Device, on_delete=models.DO_NOTHING, null=True)[m
+[31m-    reading = models.JSONField(default=dict)[m
+[32m+[m[32m    reading = models.FloatField(null=True, blank=True, default=None)[m
+ [m
+     def __str__(self):[m
+[31m-        return "Reading {}".format(self.reading_type)[m
+[32m+[m[32m        return "Reading {}".format(str(self.id))[m
+ [m
+ [m
+ class HumidityReading(models.Model):[m
+     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)[m
+     created_at = models.DateTimeField(default=datetime.now)[m
+     device = models.ForeignKey(Device, on_delete=models.DO_NOTHING, null=True)[m
+[31m-    reading_type = models.CharField(max_length=200)[m
+[31m-    reading = models.JSONField(default=dict)[m
+[32m+[m[32m    reading = models.FloatField(null=True, blank=True, default=None)[m
+ [m
+     def __str__(self):[m
+[31m-        return "Reading {}".format(self.reading_type)[m
+\ No newline at end of file[m
+[32m+[m[32m        return "Reading {}".format(str(self.id))[m
+\ No newline at end of file[m
+[1mdiff --git a/api/serializers.py b/api/serializers.py[m
+[1mindex 42668e6..ea3e39f 100644[m
+[1m--- a/api/serializers.py[m
+[1m+++ b/api/serializers.py[m
+[36m@@ -4,8 +4,8 @@[m [mfrom rest_framework import serializers[m
+ class DeviceSerializer(serializers.BaseSerializer):[m
+     def to_representation(self, instance):[m
+         return {[m
+[31m-            'id': str(instance.id),[m
+[31m-            'name': instance.name[m
+[32m+[m[32m            'name': instance.name,[m
+[32m+[m[32m            'uid': instance.uid[m
+         }[m
+ [m
+ class ReadingSerializer(serializers.BaseSerializer):[m
+[36m@@ -14,7 +14,7 @@[m [mclass ReadingSerializer(serializers.BaseSerializer):[m
+         return {[m
+             'id': str(instance.id),[m
+             'created_at': instance.created_at,[m
+[31m-            'device_id': context['device_id'],[m
+[32m+[m[32m            'device_uid': context['device_uid'],[m
+             'parameter': context['parameter'],[m
+             'start_on': context['start_on'],[m
+             'end_on': context['end_on'],[m
+[1mdiff --git a/api/urls.py b/api/urls.py[m
+[1mindex 1ad07b2..9a4171a 100644[m
+[1m--- a/api/urls.py[m
+[1m+++ b/api/urls.py[m
+[36m@@ -3,8 +3,8 @@[m [mfrom api import views[m
+ [m
+ [m
+ urlpatterns = [[m
+[31m-    re_path(r'devices/(?P<device_id>[0-9A-Fa-f-]+)/readings/(?P<parameter>[a-zA-Z_]+)/', views.ReadingView.as_view(), name='reading'),[m
+[31m-    re_path(r'devices/(?P<device_id>[0-9A-Fa-f-]+)/', views.DeviceView.as_view(), name='device'),[m
+[32m+[m[32m    re_path(r'devices/(?P<device_uid>\w+)/readings/(?P<parameter>[a-zA-Z_]+)/', views.ReadingView.as_view(), name='reading'),[m
+[32m+[m[32m    re_path(r'devices/(?P<device_uid>\w+)/', views.DeviceObjectView.as_view(), name='device'),[m
+     re_path(r'devices/', views.DeviceDetailView.as_view(), name='alldevices'),[m
+ [m
+ ][m
+\ No newline at end of file[m
+[1mdiff --git a/api/views.py b/api/views.py[m
+[1mindex 3a828a6..46b05f5 100644[m
+[1m--- a/api/views.py[m
+[1m+++ b/api/views.py[m
+[36m@@ -13,14 +13,14 @@[m [mfrom rest_framework.status import ([m
+ )[m
+ [m
+ [m
+[31m-class DeviceView(APIView):[m
+[32m+[m[32mclass DeviceObjectView(APIView):[m
+     authentication_classes = (TokenAuthentication, )[m
+     permission_classes = (IsAuthenticated,)[m
+ [m
+     def get(self, request, *args, **kwargs):[m
+         try:[m
+[31m-            device_id = kwargs['device_id'][m
+[31m-            device = Device.objects.get(id=device_id)[m
+[32m+[m[32m            device_uid = str(kwargs['device_uid'])[m
+[32m+[m[32m            device = Device.objects.get(uid=device_uid)[m
+             res = DeviceSerializer(device).data[m
+         except Exception as e:[m
+             return Response({"error": "some error occurred or not found!!"}, status=HTTP_404_NOT_FOUND)[m
+[36m@@ -29,8 +29,8 @@[m [mclass DeviceView(APIView):[m
+ [m
+     def delete(self, request, *args, **kwargs):[m
+         try:[m
+[31m-            device_id = kwargs['device_id'][m
+[31m-            device = Device.objects.get(id=device_id)[m
+[32m+[m[32m            device_uid = str(kwargs['device_uid'])[m
+[32m+[m[32m            device = Device.objects.get(uid=device_uid)[m
+             device.delete()[m
+         except Exception as e:[m
+             return Response({"error": "some error occurred or not found!! hence won't be able to delete"}, status=HTTP_404_NOT_FOUND)[m
+[36m@@ -53,7 +53,8 @@[m [mclass DeviceDetailView(APIView):[m
+     def post(self, request, *args, **kwargs):[m
+         try:[m
+             device_name = request.data['name'][m
+[31m-            device = Device.objects.create(name=device_name)[m
+[32m+[m[32m            uid = request.data['uid'][m
+[32m+[m[32m            device = Device.objects.create(name=device_name, uid=uid)[m
+             res = DeviceSerializer(device).data[m
+         except Exception as e:[m
+             return Response({"error": "some error occurred or device already exits with the name {} ".format(device_name)}, status=HTTP_404_NOT_FOUND)[m
+[36m@@ -67,8 +68,8 @@[m [mclass ReadingView(APIView):[m
+ [m
+     def get(self, request, *args, **kwargs):[m
+         try:[m
+[31m-            device_id = kwargs['device_id'][m
+[31m-            device = Device.objects.get(id=device_id)[m
+[32m+[m[32m            device_uid = str(kwargs['device_uid'])[m
+[32m+[m[32m            device = Device.objects.get(uid=device_uid)[m
+             parameter = kwargs['parameter'][m
+             start_on_date = request.GET['start_on'][m
+             end_on_date = request.GET['end_on'][m
+[36m@@ -79,17 +80,17 @@[m [mclass ReadingView(APIView):[m
+                 res_data = HumidityReading.objects.filter([m
+                     created_at__gte=start_on,[m
+                     created_at__lte=end_on,[m
+[31m-                    device__id=device_id[m
+[32m+[m[32m                    device__uid=device_uid[m
+                 )[m
+             if parameter == 'temperature':[m
+                 res_data = TemperatureReading.objects.filter([m
+                     created_at__gte=start_on,[m
+                     created_at__lte=end_on,[m
+[31m-                    device__id=device_id[m
+[32m+[m[32m                    device__uid=device_uid[m
+                 )[m
+             [m
+             res  = ReadingSerializer(res_data, many=True, context={[m
+[31m-                    'device_id':device_id,[m
+[32m+[m[32m                    'device_uid':device_uid,[m
+                     'start_on':start_on_date,[m
+                     'end_on': end_on_date,[m
+                     'parameter': parameter[m
+[1mdiff --git a/db.sqlite3 b/db.sqlite3[m
+[1mindex b444e42..88af784 100644[m
+Binary files a/db.sqlite3 and b/db.sqlite3 differ

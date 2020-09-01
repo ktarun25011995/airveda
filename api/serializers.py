@@ -4,8 +4,8 @@ from rest_framework import serializers
 class DeviceSerializer(serializers.BaseSerializer):
     def to_representation(self, instance):
         return {
-            'id': str(instance.id),
-            'name': instance.name
+            'name': instance.name,
+            'uid': instance.uid
         }
 
 class ReadingSerializer(serializers.BaseSerializer):
@@ -14,7 +14,7 @@ class ReadingSerializer(serializers.BaseSerializer):
         return {
             'id': str(instance.id),
             'created_at': instance.created_at,
-            'device_id': context['device_id'],
+            'device_uid': context['device_uid'],
             'parameter': context['parameter'],
             'start_on': context['start_on'],
             'end_on': context['end_on'],

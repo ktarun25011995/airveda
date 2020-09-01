@@ -13,14 +13,14 @@ from rest_framework.status import (
 )
 
 
-class DeviceView(APIView):
+class DeviceObjectView(APIView):
     authentication_classes = (TokenAuthentication, )
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, *args, **kwargs):
         try:
-            device_id = kwargs['device_id']
-            device = Device.objects.get(id=device_id)
+            device_uid = str(kwargs['device_uid'])
+            device = Device.objects.get(uid=device_uid)
             res = DeviceSerializer(device).data
         except Exception as e:
             return Response({"error": "some error occurred or not found!!"}, status=HTTP_404_NOT_FOUND)
@@ -29,8 +29,8 @@ class DeviceView(APIView):
 
     def delete(self, request, *args, **kwargs):
         try:
-            device_id = kwargs['device_id']
-            device = Device.objects.get(id=device_id)
+            device_uid = str(kwargs['device_uid'])
+            device = Device.objects.get(uid=device_uid)
             device.delete()
         except Exception as e:
             return Response({"error": "some error occurred or not found!! hence won't be able to delete"}, status=HTTP_404_NOT_FOUND)
@@ -53,7 +53,8 @@ class DeviceDetailView(APIView):
     def post(self, request, *args, **kwargs):
         try:
             device_name = request.data['name']
-            device = Device.objects.create(name=device_name)
+            uid = request.data['uid']
+            device = Device.objects.create(name=device_name, uid=uid)
             res = DeviceSerializer(device).data
         except Exception as e:
             return Response({"error": "some error occurred or device already exits with the name {} ".format(device_name)}, status=HTTP_404_NOT_FOUND)
@@ -67,8 +68,8 @@ class ReadingView(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            device_id = kwargs['device_id']
-            device = Device.objects.get(id=device_id)
+            device_uid = str(kwargs['device_uid'])
+            device = Device.objects.get(uid=device_uid)
             parameter = kwargs['parameter']
             start_on_date = request.GET['start_on']
             end_on_date = request.GET['end_on']
@@ -79,17 +80,17 @@ class ReadingView(APIView):
                 res_data = HumidityReading.objects.filter(
                     created_at__gte=start_on,
                     created_at__lte=end_on,
-                    device__id=device_id
+                    device__uid=device_uid
                 )
             if parameter == 'temperature':
                 res_data = TemperatureReading.objects.filter(
                     created_at__gte=start_on,
                     created_at__lte=end_on,
-                    device__id=device_id
+                    device__uid=device_uid
                 )
             
             res  = ReadingSerializer(res_data, many=True, context={
-                    'device_id':device_id,
+                    'device_uid':device_uid,
                     'start_on':start_on_date,
                     'end_on': end_on_date,
                     'parameter': parameter
